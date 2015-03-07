@@ -1,0 +1,16 @@
+{
+  "name": "bafirc",
+  "version": "0.0.0",
+  "description": "BAFIRC is a cloud-ready IRC client.",
+  "private": true,
+  "dependencies": {
+    "carrier": "^0.1.14",
+    "pegcoffee": "^0.1.0",
+    "pegjs": "^0.8.0",
+    "priorityqueuejs": "^1.0.0"
+  },
+  "devDependencies": {
+    "mocha": "^2.2.0",
+    "should": "^5.1.0"
+  }
+}

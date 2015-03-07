@@ -1,0 +1,34 @@
+// IRC message grammar
+
+message = prefix:prefixSpace? command:command params:params space? crlf? { prefix: prefix, command: command, parameters: params }
+
+prefix = ':' nick:nickPart user:userPart? host:hostPart? { nick: nick, user: user, host: host }
+prefixSpace = p:prefix space { p }
+nickPart = nickOrHost
+userPart = '!' user:user { user }
+hostPart = '@' host:host { host }
+
+command 'command' = chars:(letter+ / (number number number)) { chars.join('').toUpperCase() }
+
+params 'parameter list' = middles:spaceMiddleParam* trailing:spaceTrailingParam? {
+	params = middles
+	params.push trailing if trailing?
+	params
+}
+
+middleParam 'middle parameter' = &[^:\0\r\n ] chars:[^\0\r\n ]* { chars.join '' }
+spaceMiddleParam = space p:middleParam { p }
+trailingParam 'trailing parameter' = ':' chars:[^\0\r\n]+ { chars.join '' }
+spaceTrailingParam = space p:trailingParam { p }
+
+nick 'nickname' = &letter chars:(letter / number / special)+ { chars.join '' }
+user 'username' = chars:[^ @\0\r\n]+ { chars.join '' }
+host 'hostname' = chars:[^ \0\r\n]+ { chars.join '' }
+nickOrHost 'nickname or hostname' = &(letter / special) chars:(letter / number / special / '.')+ { chars.join '' }
+
+letter 'letter' = [a-zA-Z]
+number 'number' = [0-9]
+special 'special' = [\-\[\]\\`\^{}]
+
+space 'space' = ' '+
+crlf 'end of message' = [\r\n]*
