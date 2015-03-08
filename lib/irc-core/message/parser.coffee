@@ -8,6 +8,7 @@ pegcoffee = require 'pegcoffee'
 fs = require 'fs'
 path = require 'path'
 
+ctcp = require './ctcp'
 numerics = require './numerics'
 
 parser = do ->
@@ -23,4 +24,7 @@ module.exports =
 			parsed.isNumeric = true
 			parsed.commandRaw = parsed.command
 			parsed.command = numeric
+		if parsed.command is 'PRIVMSG' or parsed.command is 'NOTICE'
+			# handle CTCP items
+			parsed.ctcpParts = ctcp.parse parsed.parameters[1]
 		parsed

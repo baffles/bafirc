@@ -2,6 +2,8 @@
 
 IrcNetwork = require './lib/irc-core/network'
 
+{ ctcp } = require './lib/irc-core/message'
+
 os = require 'os'
 
 ###irc = new IrcConnection host: 'chat.freenode.net', port: 6667
@@ -18,6 +20,15 @@ irc.connect()
 irc.on 'connect', () ->
 	irc.join '#bafsoft,#iia'
 	#irc.privmsg '#bafsoft', 'I AM THE BEST IN THE WORLD!'
+
+irc.connection.on 'message', (message) ->
+	if message.command is 'PRIVMSG' and message.ctcpParts?
+		for part in message.ctcpParts
+			switch part.tag
+				when 'VERSION'
+					irc.connection.send 'NOTICE', message.prefix.nick, ctcp.ctcp 'VERSION', 'bafirc (pwns)'
+				when 'PING'
+					irc.connection.send 'NOTICE', message.prefix.nick, ctcp.ctcp 'PING', part.data
 
 irc.serverScreen.on 'message', (message) ->
 	console.log "[server #{message.type}] #{if message.who? then "<#{message.who.nick}> " else ""}#{message.message}"

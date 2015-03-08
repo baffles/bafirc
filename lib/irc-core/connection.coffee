@@ -1,4 +1,4 @@
-parser = require './parser'
+{parser} = require './message'
 SendQueue = require './sendqueue'
 
 net = require 'net'

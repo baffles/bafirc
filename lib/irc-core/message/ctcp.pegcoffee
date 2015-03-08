@@ -1,0 +1,16 @@
+// CTCP grammar
+
+message 'message' = (xmsg/nxmsg)+
+
+xmsg 'extended message' =
+	xdelim tag:xtag space data:xdata xdelim { tag: tag, data: data } /
+	xdelim tag:xtag xdelim { tag: tag }
+nxmsg 'non-extended message' = message:.+ { message.join '' }
+
+xtag 'extended tag' = tag:xnas+ { tag.join '' }
+xdata 'extended data' = data:xchr* { data.join '' }
+
+xdelim 'ctcp delimiter' = '\x01'
+xchr 'extended character' = [^\x01]
+xnas 'extended character/non space' = [^\x01 ]
+space 'space' = ' '
