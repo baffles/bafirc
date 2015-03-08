@@ -1,7 +1,9 @@
 events = require 'events'
 
 IrcConnection = require './connection'
-IrcScreen = require './screen'
+
+# temp
+IrcScreen = require '../screen'
 
 module.exports = class IrcNetwork extends events.EventEmitter
 	constructor: (@name, @connectionOptions, @nickname, @username, @realname) ->

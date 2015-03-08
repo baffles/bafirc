@@ -1,6 +1,6 @@
 # connect to irc!
 
-IrcNetwork = require './lib/network'
+IrcNetwork = require './lib/irc-core/network'
 
 os = require 'os'
 
