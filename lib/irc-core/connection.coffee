@@ -1,5 +1,9 @@
-{parser} = require './message'
-SendQueue = require './sendqueue'
+###
+Simple IRC connection layer.
+###
+
+{parser, defaultPrioritizer} = require './message'
+SendQueue = require './send-queue'
 
 net = require 'net'
 carrier = require 'carrier'
@@ -9,8 +13,10 @@ events = require 'events'
 module.exports = class IrcConnection extends events.EventEmitter
 	constructor: (@options) ->
 		@queue = new SendQueue
+		@prioritizer = @options.prioritizer or defaultPrioritizer
 
 	connect: ->
+		#TODO: SSL support
 		@connection = net.createConnection host: @options.host, port: @options.port
 		@connection.on 'connect', =>
 			@identity = family: @connection.remoteFamily, remoteAddress: @connection.remoteAddress, remotePort: @connection.remotePort, localAddress: @connection.localAddress, localPort: @connection.localPort
@@ -29,7 +35,7 @@ module.exports = class IrcConnection extends events.EventEmitter
 			@emit 'send-raw', message
 			@connection.write message
 
-	kill: -> @connection.end()
+	disconnect: -> @connection.end()
 
 	flushQueue: -> @queue.flush()
 	queueStats: -> @queue.stats()
@@ -37,6 +43,11 @@ module.exports = class IrcConnection extends events.EventEmitter
 	stats: -> received: @connection.bytesRead, sent: @connection.bytesWritten
 
 	sendWithPriority: (priority, command, params...) =>
+		if typeof command is 'object'
+			# handle IRC message objects
+			params = command.parameters
+			command = command.command
+
 		msg = command
 
 		[params..., lastParam] = params
@@ -44,14 +55,16 @@ module.exports = class IrcConnection extends events.EventEmitter
 		msg += " #{param}" for param in params
 
 		switch
-			when (lastParam?.indexOf ' ') >= 0
+			when (lastParam?.indexOf ' ') >= 0 or lastParam?[0] is ':'
 				msg += " :#{lastParam}"
 			when lastParam?
 				msg += " #{lastParam}"
 
 		@sendRaw msg, priority
 
-	send: (command, params...) -> @sendWithPriority 0, command, params...
+	send: (command, params...) ->
+		priority = @prioritizer command, params...
+		@sendWithPriority priority, command, params...
 
 	sendRaw: (message, priority=0) ->
 		message = "#{message}\r\n"

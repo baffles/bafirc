@@ -1,25 +1,32 @@
 # connect to irc!
 
-IrcNetwork = require './lib/irc-core/network'
+IrcConnectionManager = require './lib/irc-core/manager'
 
 { ctcp } = require './lib/irc-core/message'
 
 os = require 'os'
 
-###irc = new IrcConnection host: 'chat.freenode.net', port: 6667
+irc = new IrcConnectionManager
+	name: 'FreeNode'
+	user:
+		nickname: 'bafirc'
+		user: 'bafirc'
+		realName: 'lol'
+	server:
+		host: 'chat.freenode.net'
 
-irc.connect()
+irc.on 'connect', ->
+	console.log 'connected!'
+	irc.connection.on 'send-raw', (raw) -> console.log "-> #{raw.trim()}"
+	irc.connection.on 'raw', (raw) -> console.log "<- #{raw.trim()}"
+irc.on 'disconnect', -> console.log 'disconnected...'
+irc.on 'reconnect-wait', (wait) -> console.log "waiting #{wait.delay}s to reconnect..."
+irc.on 'end', -> console.log 'connection keepalive ended'
 
-irc.on 'connect', () -> console.log 'connected'
-irc.on 'end', () -> console.log 'disconnected'###
-
-irc = new IrcNetwork 'FreeNode', { host: 'chat.freenode.net', port: 6667 }, 'bafirc', 'bafirc', 'bafirc'
-
-irc.connect()
-
-irc.on 'connect', () ->
-	irc.join '#bafsoft,#iia'
+irc.on 'registered', () ->
+	#irc.join '#bafsoft,#iia'
 	#irc.privmsg '#bafsoft', 'I AM THE BEST IN THE WORLD!'
+	irc.connection.send 'JOIN', '#bafsoft,#iia'
 
 irc.connection.on 'message', (message) ->
 	if message.command is 'PRIVMSG' and message.ctcpParts?
@@ -30,6 +37,40 @@ irc.connection.on 'message', (message) ->
 				when 'PING'
 					irc.connection.send 'NOTICE', message.prefix.nick, ctcp.ctcp 'PING', part.data
 
+irc.on 'message', (message) ->
+	if message.command is 'PRIVMSG'
+		dest = message.parameters[0]
+		text = message.parameters[1]
+		switch
+			when (text.indexOf 'fuck you') >= 0
+				irc.connection.send 'PRIVMSG', dest, 'fuck you too'
+			when text is '!quit'
+				irc.connection.send 'QUIT', 'bye'
+			when (text.substring 0, 6) is '!echo '
+				irc.connection.sendRaw text.substring 6
+			when text is '!mem'
+				mem = process.memoryUsage()
+				irc.connection.send 'PRIVMSG', dest, "I'm using #{bytesToSize mem.rss} of memory! Google V8's heap is #{bytesToSize mem.heapUsed} used / #{bytesToSize mem.heapTotal} total"
+			when text is '!sysinfo'
+				info = "PID #{process.pid} (#{process.title}) - running on #{process.platform} on #{process.arch}. Up for #{process.uptime()}s."
+				irc.connection.send 'PRIVMSG', dest, info
+				info = "System up for #{os.uptime()}s. Memory #{bytesToSize os.freemem()} free / #{bytesToSize os.totalmem()}. #{os.cpus().length} CPUs / #{os.networkInterfaces().length} network interfaces."
+				irc.connection.send 'PRIVMSG', dest, info
+			when text is '!flood'
+				irc.connection.send 'PRIVMSG', dest, "#{i}" for i in [1..20]
+			when text is '!flushq'
+				irc.connection.flushQueue()
+			when text is '!queue'
+				irc.connection.sendWithPriority 100, 'PRIVMSG', dest, JSON.stringify irc.connection.queueStats()
+				#irc.privmsg dest, JSON.stringify irc.queueStats()
+			when text is '!conn'
+				irc.connection.send 'PRIVMSG', dest, "Connected to #{irc.connection.identity.remoteAddress}:#{irc.connection.identity.remotePort}"
+				stats = irc.connection.stats()
+				irc.connection.send 'PRIVMSG', dest, "Sent #{bytesToSize stats.sent}; received #{bytesToSize stats.received}"
+
+irc.connect()
+
+###
 irc.serverScreen.on 'message', (message) ->
 	console.log "[server #{message.type}] #{if message.who? then "<#{message.who.nick}> " else ""}#{message.message}"
 

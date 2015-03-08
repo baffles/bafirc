@@ -4,6 +4,7 @@
   "description": "BAFIRC is a cloud-ready IRC client.",
   "private": true,
   "dependencies": {
+    "backoff": "^2.4.1",
     "carrier": "^0.1.14",
     "pegcoffee": "^0.1.0",
     "pegjs": "^0.8.0",
