@@ -3,8 +3,17 @@
 IrcConnectionManager = require './lib/irc-core/manager'
 
 { ctcp } = require './lib/irc-core/message'
+CtcpResponder = require './lib/irc-core/ctcp-responder'
 
 os = require 'os'
+
+ctcpResponder = new CtcpResponder
+	FINGER: 'BAFIRC, idle FOREVER!'
+	VERSION: 'bafirc v0.0.0'
+	SOURCE: 'https://github.com/baffles/bafirc'
+	USERINFO: 'I AM AWESOME'
+	PING: (ts) -> ts
+	TIME: -> Date.now().toString()
 
 irc = new IrcConnectionManager
 	name: 'FreeNode'
@@ -17,10 +26,11 @@ irc = new IrcConnectionManager
 
 irc.on 'connect', ->
 	console.log 'connected!'
+	ctcpResponder.register irc.connection
 	irc.connection.on 'send-raw', (raw) -> console.log "-> #{raw.trim()}"
 	irc.connection.on 'raw', (raw) -> console.log "<- #{raw.trim()}"
 irc.on 'disconnect', -> console.log 'disconnected...'
-irc.on 'reconnect-wait', (wait) -> console.log "waiting #{wait.delay}s to reconnect..."
+irc.on 'reconnect-wait', (wait) -> console.log "waiting #{wait.delay}ms to reconnect..."
 irc.on 'end', -> console.log 'connection keepalive ended'
 
 irc.on 'registered', () ->
@@ -28,14 +38,14 @@ irc.on 'registered', () ->
 	#irc.privmsg '#bafsoft', 'I AM THE BEST IN THE WORLD!'
 	irc.connection.send 'JOIN', '#bafsoft,#iia'
 
-irc.connection.on 'message', (message) ->
+###irc.on 'message', (message) ->
 	if message.command is 'PRIVMSG' and message.ctcpParts?
 		for part in message.ctcpParts
 			switch part.tag
 				when 'VERSION'
 					irc.connection.send 'NOTICE', message.prefix.nick, ctcp.ctcp 'VERSION', 'bafirc (pwns)'
 				when 'PING'
-					irc.connection.send 'NOTICE', message.prefix.nick, ctcp.ctcp 'PING', part.data
+					irc.connection.send 'NOTICE', message.prefix.nick, ctcp.ctcp 'PING', part.data###
 
 irc.on 'message', (message) ->
 	if message.command is 'PRIVMSG'
@@ -114,6 +124,9 @@ for chan in [ '#bafsoft', '#iia' ]
 						irc.privmsg dest, "Connected to #{irc.connection.identity.remoteAddress}:#{irc.connection.identity.remotePort}"
 						stats = irc.connection.stats()
 						irc.privmsg dest, "Sent #{bytesToSize stats.sent}; received #{bytesToSize stats.received}"
+
+irc.connect()
+###
 
 bytesToSize = `function (bytes) {
    var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
