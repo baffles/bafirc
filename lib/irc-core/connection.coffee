@@ -21,10 +21,12 @@ module.exports = class IrcConnection extends events.EventEmitter
 		@connection.on 'connect', =>
 			@identity = family: @connection.remoteFamily, remoteAddress: @connection.remoteAddress, remotePort: @connection.remotePort, localAddress: @connection.localAddress, localPort: @connection.localPort
 			@emit 'connect'
+		@connection.on 'error', (error) -> # log? no-op for now, close will be emitted right after
 		@connection.on 'close', (isError) => @emit 'close', isError
 
 		@carrier = carrier.carry @connection
 		@carrier.on 'line', (line) =>
+			@lastReceive = Date.now()
 			@emit 'raw', line
 			@emit 'message', parser.parse line
 
