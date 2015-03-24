@@ -80,8 +80,8 @@ module.exports = class IrcConnectionManager extends events.EventEmitter
 		return if @reaper?
 		reaper = () =>
 			now = Date.now()
-			pingTime = now - @serverInfo.reaperInterval
-			reapTime = now - 3 * @serverInfo.reaperInterval
+			pingTime = now - 10 * @serverInfo.reaperInterval
+			reapTime = pingTime - 3 * @serverInfo.reaperInterval
 			switch
 				when @connection.lastReceive < reapTime
 					# radio silence for too long, abort and reconnect
