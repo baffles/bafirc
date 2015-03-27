@@ -79,6 +79,7 @@ module.exports = class IrcConnectionManager extends events.EventEmitter
 	startReaper: () ->
 		return if @reaper?
 		reaper = () =>
+			return if not @connection?
 			now = Date.now()
 			pingTime = now - 10 * @serverInfo.reaperInterval
 			reapTime = pingTime - 3 * @serverInfo.reaperInterval
