@@ -6,6 +6,8 @@
   "dependencies": {
     "backoff": "^2.4.1",
     "carrier": "^0.1.14",
+    "express": "^4.12.3",
+    "express-sse-stream": "0.0.1",
     "pegcoffee": "^0.1.0",
     "pegjs": "^0.8.0",
     "priorityqueuejs": "^1.0.0"

@@ -68,6 +68,11 @@ module.exports = class IrcConnectionManager extends events.EventEmitter
 				when 'PING'
 					connection.send 'PONG', message.parameters[0]
 
+		connection.on 'send', (message) => @emit 'send', message
+
+		connection.on 'raw', (raw) => @emit 'raw', raw
+		connection.on 'send-raw', (raw) => @emit 'send-raw', raw
+
 		connection.connect()
 		@startReaper()
 
@@ -113,3 +118,10 @@ module.exports = class IrcConnectionManager extends events.EventEmitter
 			true
 		else
 			false
+
+	#TODO: improve the public interface
+	send: (command, params...) ->
+		@connection.send command, params...
+
+	sendRaw: (message, priority=0) ->
+		@connection.sendRaw message, priority

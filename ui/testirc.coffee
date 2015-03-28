@@ -1,9 +1,9 @@
-# connect to irc!
+# uber basic front-end
 
-IrcConnectionManager = require './lib/irc-core/manager'
+IrcConnectionManager = require '../lib/irc-core/manager'
 
-{ ctcp } = require './lib/irc-core/message'
-CtcpResponder = require './lib/irc-core/ctcp-responder'
+{ ctcp } = require '../lib/irc-core/message'
+CtcpResponder = require '../lib/irc-core/ctcp-responder'
 
 os = require 'os'
 
@@ -34,9 +34,9 @@ irc.on 'reconnect-wait', (wait) -> console.log "waiting #{wait.delay}ms to recon
 irc.on 'end', -> console.log 'connection keepalive ended'
 
 irc.on 'registered', () ->
-	#irc.join '#bafsoft,#iia'
-	#irc.privmsg '#bafsoft', 'I AM THE BEST IN THE WORLD!'
-	irc.connection.send 'JOIN', '#bafsoft,#iia'
+	#irc.join '#baf,#iia'
+	#irc.privmsg '#baf', 'I AM THE BEST IN THE WORLD!'
+	irc.connection.send 'JOIN', '#baf,#iia'
 
 ###irc.on 'message', (message) ->
 	if message.command is 'PRIVMSG' and message.ctcpParts?
@@ -178,3 +178,79 @@ irc.on 'message', (message) ->
 #irc.send 'USER', 'bafirc', '*', '*', 'bafirc'
 #irc.send 'JOIN', '#iia,#bafsoft'
 #irc.send 'PRIVMSG #iia :Sevalecan SUCKS and so does NubSaybit'
+
+express = require 'express'
+app = express()
+bodyParser = require 'body-parser'
+{sse} = require 'express-sse-stream'
+
+page = """<html>
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<script type="text/javascript">
+	$(function() {
+		irc = $('#irc')
+		toSend = $('#to-send')
+
+		$('#sender').submit(function(e) {
+			e.preventDefault()
+			input = toSend.val()
+			if (input.length > 0) $.ajax({
+				type: 'POST',
+				url: '/send',
+				data: input,
+				contentType: 'text/plain'
+			})
+			toSend.val('')
+		})
+	})
+
+	function append(line) {
+		var cur = irc.val()
+		irc.val(cur + (cur.length > 0 ? '\\n' : '') + line)
+		irc.scrollTop(irc[0].scrollHeight)
+	}
+
+	var eventSource = new EventSource("/stream")
+	eventSource.addEventListener('send', function(e) {
+		append('> ' + e.data)
+	}, false)
+	eventSource.addEventListener('receive', function(e) {
+		append('< ' + e.data)
+	}, false)
+</script>
+</head>
+<body>
+<textarea id="irc" style="width: 800px; height: 400px" readonly="true"></textarea>
+<form id="sender">
+<input type="text" style="width: 800px" id="to-send" />
+</form>
+</body>
+</html>"""
+
+app.get '/', (req, res) ->
+	res.set 'Content-Type', 'text/html'
+	res.send page
+
+app.get '/stream', sse(), (req, res) ->
+	console.log "sse opened to #{req.ip}"
+
+	sendListener = (raw) ->
+		req.sse.stream.write event: 'send', data: raw
+	receiveListener = (raw) ->
+		req.sse.stream.write event: 'receive', data: raw
+
+	irc.on 'send-raw', sendListener
+	irc.on 'raw', receiveListener
+
+	req.sse.stream.on 'finish', ->
+		console.log "sse closed to #{req.ip}"
+		irc.removeListener 'send-raw', sendListener
+		irc.removeListener 'raw', receiveListener
+
+app.post '/send', bodyParser.text(), (req, res) ->
+	irc.send req.body
+	res.status(200).end()
+
+server = app.listen 3000, ->
+	console.log "Listening at http://#{server.address().address}:#{server.address().port}"
