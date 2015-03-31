@@ -25,7 +25,7 @@ module.exports = class SendQueue extends events.EventEmitter
 		queued: queued, eta: @penalty * queued
 
 	flush: ->
-		@queue.deq() for i in [1..@queue.size()]
+		@queue.deq() for i in [1..@queue.size()] if @queue.size()
 
 	actualSend: (message) ->
 		@emit 'send', message
