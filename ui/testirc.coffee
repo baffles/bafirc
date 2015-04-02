@@ -66,8 +66,10 @@ irc.on 'message', (message) ->
 				irc.connection.send 'PRIVMSG', dest, info
 				info = "System up for #{os.uptime()}s. Memory #{bytesToSize os.freemem()} free / #{bytesToSize os.totalmem()}. #{os.cpus().length} CPUs / #{os.networkInterfaces().length} network interfaces."
 				irc.connection.send 'PRIVMSG', dest, info
-			when text is '!flood'
-				irc.connection.send 'PRIVMSG', dest, "#{i}" for i in [1..20]
+			when text.substring(0, 6) is '!flood'
+				max = parseInt text.substring 7
+				max = 20 if isNaN max
+				irc.connection.send 'PRIVMSG', dest, "#{i}" for i in [1..max]
 			when text is '!flushq'
 				irc.connection.flushQueue()
 			when text is '!queue'
