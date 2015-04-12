@@ -18,7 +18,7 @@ params 'parameter list' = middles:spaceMiddleParam* trailing:spaceTrailingParam?
 
 middleParam 'middle parameter' = &[^:\0\r\n ] chars:[^\0\r\n ]* { chars.join '' }
 spaceMiddleParam = space p:middleParam { p }
-trailingParam 'trailing parameter' = ':' chars:[^\0\r\n]+ { chars.join '' }
+trailingParam 'trailing parameter' = ':' chars:[^\0\r\n]* { chars.join '' }
 spaceTrailingParam = space p:trailingParam { p }
 
 nick 'nickname' = &letter chars:(letter / number / special)+ { chars.join '' }
