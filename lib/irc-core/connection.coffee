@@ -18,7 +18,7 @@ module.exports = class IrcConnection extends events.EventEmitter
 	connect: ->
 		#TODO: SSL support
 		@connection = net.createConnection host: @options.host, port: @options.port
-		@lastActive = Date.now()
+		@lastReceive = Date.now()
 		@connection.on 'connect', =>
 			@identity = family: @connection.remoteFamily, remoteAddress: @connection.remoteAddress, remotePort: @connection.remotePort, localAddress: @connection.localAddress, localPort: @connection.localPort
 			@emit 'connect'
@@ -27,7 +27,7 @@ module.exports = class IrcConnection extends events.EventEmitter
 
 		@carrier = carrier.carry @connection
 		@carrier.on 'line', (line) =>
-			@lastActive = Date.now()
+			@lastReceive = Date.now()
 			@emit 'raw', line
 			@emit 'message', parser.parse line
 
