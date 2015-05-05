@@ -26,6 +26,7 @@ module.exports = class SendQueue extends events.EventEmitter
 
 	flush: ->
 		@queue.deq() for i in [1..@queue.size()] if @queue.size()
+		delete @messageTimer
 
 	actualSend: (message) ->
 		@emit 'send', message
@@ -33,7 +34,8 @@ module.exports = class SendQueue extends events.EventEmitter
 
 	processQueue: ->
 		return if @queue.isEmpty()
-		canSend = (Date.now() - @lastActualSend) / @penalty
+		sendWindow = Math.min Date.now() - @lastActualSend, @window
+		canSend = sendWindow / @penalty
 		willSend = Math.min canSend, @queue.size()
 		@actualSend message for message in [1..willSend].map () => @queue.deq().message
 
